@@ -1,63 +1,76 @@
 const invoices = require("./invoices.json");
 const plays = require("./plays.json");
 
-invoices.map(function (invoice, index) { 
-  console.log(statement(invoice, plays));
-})
+console.log(statement(invoices));
 
-function statement(invoice, plays) { 
+function statement(invoice) { 
   let totalAmount = 0;
-  let volumeCredits = 0;
   let result = `Statement for ${invoice.customer}\n`;
-  const format = new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    minimumFractionDigits: 2
-  }).format;
 
-  for(let perf of invoice.performances){
-    const play = plays[perf.playId];
-    
-    let thisAmount = amountFor(perf, play);
-
-    //Soma créditos por volume
-    volumeCredits += Math.max(perf.audience - 30, 0)
-    // soma um crédito extra para cada dez esoectadores de comédia
-    if("comedy" === play.type) volumeCredits += Math.floor(perf.audience / 5);
+  for(let aPerformance of invoice.performances){    
+    let thisAmount = amountFor(aPerformance, playFor(aPerformance));
 
     //Exibe a linha para esta requisição
-    result += ` ${play.name}: ${format(thisAmount/100)} (${perf.audience} seats) \n`
+    result += ` ${playFor(aPerformance).name}: ${valueToBRL(thisAmount/100)} (${aPerformance.audience} seats) \n`
     totalAmount += thisAmount;
   }
 
-  result+= `Amount owed is ${format(totalAmount/100)} \n`; 
-  result+= `You earned ${volumeCredits} credits \n`; 
+  result+= `Amount owed is ${valueToBRL(totalAmount/100)} \n`; 
+  result+= `You earned ${totalVolumeCredits()} credits \n`; 
 
   return result;
 }
 
-function amountFor(perf, play) { 
-  let thisAmount = 0;
-  switch (play.type) {
+function amountFor(aPerformance) { 
+  let result = 0;
+  switch (playFor(aPerformance).type) {
     case 'tragedy':
-      thisAmount = 40000
-      if (perf.audience > 30) {
-        thisAmount += 1000*(perf.audience - 30)
+      result = 40000
+      if (aPerformance.audience > 30) {
+        result += 1000*(aPerformance.audience - 30)
       }
     break;
 
     case 'comedy':
-      thisAmount = 30000
-      if (perf.audience > 20) {
-        thisAmount += 10000 + 500 *(perf.audience - 20)
+      result = 30000
+      if (aPerformance.audience > 20) {
+        result += 10000 + 500 *(aPerformance.audience - 20)
       }
       
-      thisAmount += 300* perf.audience
+      result += 300* aPerformance.audience
     break;
   
     default:
-      throw new Error('unknown type: ${play.type}')
+      throw new Error(`unknown type: ${playFor(aPerformance).type}`)
   }
 
-  return thisAmount;
+  return result;
+}
+
+function playFor(aPerformance) { 
+  return plays[aPerformance.playId];
+}
+
+function volumeCreditsFor(aPerformance) { 
+  let result = 0;
+  result += Math.max(aPerformance.audience - 30, 0)
+  if("comedy" === playFor(aPerformance).type) result += Math.floor(aPerformance.audience / 5);
+
+  return result;
+}
+
+function totalVolumeCredits() { 
+  let volumeCredits = 0;
+  for(let aPerformance of invoices.performances){  
+    volumeCredits += volumeCreditsFor(aPerformance)
+  }
+  return volumeCredits;
+}
+
+function valueToBRL(value) { 
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2
+  }).format(value);
 }
