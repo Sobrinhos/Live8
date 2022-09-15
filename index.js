@@ -4,18 +4,20 @@ const plays = require("./plays.json");
 console.log(statement(invoices));
 
 function statement(invoice) { 
-  let totalAmount = 0;
-  let result = `Statement for ${invoice.customer}\n`;
+  const statementData = {};
+  statementData.customer = invoice.customer;
+  statementData.performances = invoice.performances
+  return renderPlainText(statementData);
+}
 
-  for(let aPerformance of invoice.performances){    
-    let thisAmount = amountFor(aPerformance, playFor(aPerformance));
+function renderPlainText(data) { 
+  let result = `Statement for ${data.customer}\n`;
 
-    //Exibe a linha para esta requisição
-    result += ` ${playFor(aPerformance).name}: ${valueToBRL(thisAmount/100)} (${aPerformance.audience} seats) \n`
-    totalAmount += thisAmount;
+  for(let aPerformance of data.performances){    
+    result += ` ${playFor(aPerformance).name}: ${valueToBRL(amountFor(aPerformance)/100)} (${aPerformance.audience} seats) \n`
   }
 
-  result+= `Amount owed is ${valueToBRL(totalAmount/100)} \n`; 
+  result+= `Amount owed is ${valueToBRL(totalAmount()/100)} \n`; 
   result+= `You earned ${totalVolumeCredits()} credits \n`; 
 
   return result;
@@ -73,4 +75,12 @@ function valueToBRL(value) {
     currency: "BRL",
     minimumFractionDigits: 2
   }).format(value);
+}
+
+function totalAmount() { 
+  let result = 0;
+  for(let aPerformance of invoices.performances){ 
+    result += amountFor(aPerformance);
+  } 
+  return result;
 }
