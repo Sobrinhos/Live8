@@ -2,7 +2,7 @@ const invoices = require("./invoices.json");
 const createStatementData = require("./createStatementData");
 
 console.log(statement(invoices));
-console.log(htmlStatement(invoices));
+// console.log(htmlStatement(invoices));
 
 function statement(invoice) { 
   return renderPlainText(createStatementData(invoice));
